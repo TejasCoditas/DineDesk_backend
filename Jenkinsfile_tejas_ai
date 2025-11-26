@@ -1,0 +1,45 @@
+pipeline {
+    agent {label "new-bond-agent" }
+
+    environment {
+        APP_DIR = "/opt/fastapi_app"
+        RELEASE_ID = "${BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Creating venv and installing deps') {
+            steps {
+                sh "bash /home/ubuntu/setup_venv.sh"
+            }
+        }
+
+        stage('Prepare Artifact') {
+            steps {
+                sh '''
+                    rm -rf artifact
+                    mkdir artifact
+
+                    cp main.py artifact/
+                    cp -r src artifact/
+                    cp -r alembic artifact/
+                    cp -r alembic.ini artifact/
+                    cp pyproject.toml poetry.lock artifact/
+                    cp fastapi_run_app.sh artifact/
+                '''
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sh '''
+                    sudo mkdir -p ${APP_DIR}/releases/${RELEASE_ID}
+                    sudo cp -r artifact/* ${APP_DIR}/releases/${RELEASE_ID}/
+                    sudo ln -sfn ${APP_DIR}/releases/${RELEASE_ID} ${APP_DIR}/current
+                    sudo systemctl restart fastapi.service
+                    sleep 5
+                    systemctl is-active fastapi.service
+                '''
+            }
+        }
+    }
+}

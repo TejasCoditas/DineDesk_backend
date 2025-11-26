@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "restaurant-review-system"
+version = "0.1.0"
+description = ""
+authors = ["soham.kudale-coditas <soham.kudale@coditas.com>"]
+readme = "README.md"
+packages = [{include = "restaurant_review_system", from = "src"}]
+
+[tool.poetry.dependencies]
+python = ">=3.12"
+fastapi = ">=0.120.4,<0.121.0"
+uvicorn = ">=0.38.0,<0.39.0"
+alembic = ">=1.17.1,<2.0.0"
+sqlalchemy = ">=2.0.44,<3.0.0"
+python-jose = ">=3.5.0,<4.0.0"
+python-dotenv = ">=1.2.1,<2.0.0"
+psycopg2-binary = ">=2.9.11,<3.0.0"
+mangum = ">=0.19.0,<0.20.0"
+
+[tool.poetry.scripts]
+start = "main:run"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

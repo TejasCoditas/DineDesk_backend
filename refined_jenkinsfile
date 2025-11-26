@@ -1,0 +1,81 @@
+pipeline {
+    agent { label "new-bond-agent" }
+
+    environment {
+        REMOTE_USER  = "ubuntu"
+        REMOTE_HOST  = credentials('python_deployment_server_ip')
+        SSH_CRED_ID  = "newnewnew"
+
+        RELEASE_ID = "${BUILD_NUMBER}"
+        DEPLOY_DIR = "/home/ubuntu/fastapi_app"
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+    }
+
+    stages {
+
+        stage('Prepare Artifact') {
+            steps {
+                sh '''
+                    rm -rf artifact
+                    mkdir artifact
+
+                    cp main.py artifact/
+                    cp -r src artifact/
+                    cp -r alembic artifact/
+                    cp alembic.ini artifact/
+                    cp pyproject.toml poetry.lock artifact/
+                '''
+            }
+        }
+
+        stage('Upload Release') {
+            steps {
+                sshagent([SSH_CRED_ID]) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "mkdir -p ${DEPLOY_DIR}/releases/${RELEASE_ID}"
+
+                        scp -o StrictHostKeyChecking=no -r artifact/* \
+                        ${REMOTE_USER}@${REMOTE_HOST}:${DEPLOY_DIR}/releases/${RELEASE_ID}/
+                    """
+                }
+            }
+        }
+
+        stage('Activate Release') {
+            steps {
+                sshagent([SSH_CRED_ID]) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} '
+                            sudo ln -sfn ${DEPLOY_DIR}/releases/${RELEASE_ID} ${DEPLOY_DIR}/current &&
+                            sudo systemctl restart fastapi.service &&
+                            sleep 5 &&
+                            sudo systemctl is-active fastapi.service
+                        '
+                    """
+                }
+            }
+        }
+
+        stage('Cleanup Old Releases') {
+            steps {
+                sshagent([SSH_CRED_ID]) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} '
+                            cd ${DEPLOY_DIR}/releases &&
+                            ls -1t | tail -n +11 | xargs rm -rf --
+                        '
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
