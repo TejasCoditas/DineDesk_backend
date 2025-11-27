@@ -9,7 +9,7 @@ env:
   ECR_REPOSITORY: ${{ secrets.ECR_REPO_NAME }}
   ECS_SERVICE: ${{ secrets.ECS_SERVICE_ASSIGNMENT }}
   ECS_CLUSTER: ${{ secrets.ECS_CLUSTER_ASSIGNMENT }}
-  ECS_TASK_DEFINITION: fastapi-backend
+  ECS_TASK_DEFINITION: fastapi_backend
   CONTAINER_NAME: backend
 
 permissions:
